@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S&P 500 Technical Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0e13;
+    --surface: #13171f;
+    --surface2: #1a1f2b;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8ecf2;
+    --muted: #6b7585;
+    --accent: #4f8ef7;
+    --accent-dim: rgba(79,142,247,0.12);
+    --green: #34c47a;
+    --green-dim: rgba(52,196,122,0.12);
+    --red: #f05c5c;
+    --red-dim: rgba(240,92,92,0.12);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --font: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(11,14,19,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    gap: 2rem;
+  }
+  .nav-brand {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .nav-brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 1.5rem; margin-left: auto; }
+  .nav-links a {
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* HERO */
+  .hero {
+    padding: 3rem 2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* MAIN LAYOUT */
+  .main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+  /* SUMMARY CARDS */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--text);
+  }
+  .stat-value.red { color: var(--red); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* CONTROLS */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .filter-group { display: flex; gap: 4px; }
+  .btn {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: rgba(79,142,247,0.3);
+  }
+  .btn.alert-btn.active {
+    background: var(--red-dim);
+    color: var(--red);
+    border-color: rgba(240,92,92,0.3);
+  }
+  .search-wrap {
+    margin-left: auto;
+    position: relative;
+  }
+  .search-wrap input {
+    font-family: var(--font);
+    font-size: 13px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 6px 12px 6px 32px;
+    width: 160px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 13px;
+    pointer-events: none;
+  }
+  .updated-tag {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  /* TABLE */
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 800px;
+  }
+  thead th {
+    background: var(--surface);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  thead th:hover { color: var(--text); }
+  thead th.sorted { color: var(--accent); }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface); }
+  tbody tr.flagged-row { background: rgba(240,92,92,0.04); }
+  tbody tr.flagged-row:hover { background: rgba(240,92,92,0.08); }
+  td { padding: 10px 14px; color: var(--text); white-space: nowrap; }
+  .ticker-cell {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .flag-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px var(--red);
+  }
+  .price-cell { font-family: var(--mono); font-weight: 500; }
+  .ema-cell { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .ema-cell.hit { color: var(--red); font-weight: 500; }
+  .change-pos { color: var(--green); font-family: var(--mono); }
+  .change-neg { color: var(--red); font-family: var(--mono); }
+  .rsi-cell { font-family: var(--mono); font-size: 12px; }
+  .rsi-ob { color: var(--red); font-weight: 500; }
+  .rsi-os { color: var(--green); font-weight: 500; }
+  .rsi-neutral { color: var(--muted); }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-right: 3px;
+    white-space: nowrap;
+  }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(240,92,92,0.2); }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,196,122,0.2); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,166,35,0.2); }
+  .trend-bull {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(52,196,122,0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .trend-bear {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--red);
+    background: var(--red-dim);
+    border: 1px solid rgba(240,92,92,0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .trend-na { font-size: 11px; color: var(--muted); }
+  .no-alerts { font-size: 12px; color: var(--muted); }
+
+  /* LOADING */
+  .loading-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+  .loading-state .load-title { font-size: 15px; color: var(--text); margin-bottom: 8px; }
+  .progress-bar-wrap {
+    width: 200px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 1rem auto 0;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  /* EXPLAINER SECTION */
+  .explainer {
+    margin-top: 3rem;
+    border-top: 1px solid var(--border);
+    padding-top: 2.5rem;
+  }
+  .explainer-header {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .explainer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 2rem;
+  }
+  .explainer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+  }
+  .explainer-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .explainer-tag {
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .explainer-card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .explainer-card p strong { color: var(--text); font-weight: 500; }
+
+  /* DATA SOURCE */
+  .data-source {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .data-source-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .data-source-body { flex: 1; }
+  .data-source-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .data-source-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
+  .data-source-link {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid rgba(79,142,247,0.3);
+    background: var(--accent-dim);
+    padding: 4px 12px;
+    border-radius: var(--radius);
+    transition: all 0.15s;
+  }
+  .data-source-link:hover {
+    background: rgba(79,142,247,0.2);
+    border-color: var(--accent);
+  }
+
+  /* FOOTER */
+  footer {
+    margin-top: 4rem;
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 22px; }
+    .main { padding: 1.25rem; }
+    nav { padding: 0 1.25rem; }
+    .hero { padding: 2rem 1.25rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">S&P<span>500</span> Dashboard</div>
+  <div class="nav-links">
+    <a href="#dashboard">Dashboard</a>
+    <a href="#explainer">How it works</a>
+    <a href="#data">Data</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">Technical Analysis · Real-time</div>
+  <h1>S&P 500 Top 50 — Technical Dashboard</h1>
+  <p>Monitors the 50 largest S&P 500 stocks for key technical levels. Automatically flags when a stock's price touches a significant EMA, or when RSI signals extreme momentum.</p>
+  <div class="hero-meta">
+    <span class="hero-meta-item"><span class="dot"></span> Live data from Alpha Vantage</span>
+    <span class="hero-meta-item">20 · 50 · 200 EMA levels</span>
+    <span class="hero-meta-item">RSI overbought / oversold</span>
+    <span class="hero-meta-item">Golden &amp; death cross detection</span>
+  </div>
+</div>
+
+<div class="main" id="dashboard">
+
+  <div class="summary-grid" id="summaryGrid">
+    <div class="stat-card">
+      <div class="stat-label">Stocks loaded</div>
+      <div class="stat-value" id="totalCount">—</div>
+      <div class="stat-sub">Top 50 by market cap</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Flagged alerts</div>
+      <div class="stat-value red" id="alertCount">—</div>
+      <div class="stat-sub">Near key EMA level</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bullish trend</div>
+      <div class="stat-value green" id="bullCount">—</div>
+      <div class="stat-sub">Price above 200 EMA</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bearish trend</div>
+      <div class="stat-value red" id="bearCount">—</div>
+      <div class="stat-sub">Price below 200 EMA</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">RSI overbought</div>
+      <div class="stat-value amber" id="obCount">—</div>
+      <div class="stat-sub">RSI above 70</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">RSI oversold</div>
+      <div class="stat-value green" id="osCount">—</div>
+      <div class="stat-sub">RSI below 30</div>
+    </div>
+  </div>
+
+  <div class="controls-bar">
+    <div class="filter-group">
+      <button class="btn active" onclick="setFilter('all', this)">All stocks</button>
+      <button class="btn alert-btn" onclick="setFilter('flagged', this)">Flagged only</button>
+      <button class="btn" onclick="setFilter('bull', this)">Bullish</button>
+      <button class="btn" onclick="setFilter('bear', this)">Bearish</button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchBox" placeholder="Search ticker…" oninput="renderTable()">
+    </div>
+    <span class="updated-tag" id="updatedTag"></span>
+  </div>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:var(--red); box-shadow:0 0 5px var(--red)"></span>Flagged — price within 1% of an EMA</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Bullish — price above 200 EMA</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>Bearish — price below 200 EMA</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>RSI overbought (&gt;70) or oversold (&lt;30)</span>
+  </div>
+
+  <div class="table-wrap" id="tableContainer">
+    <div class="loading-state">
+      <div class="load-title">Loading market data…</div>
+      <div style="font-size:13px; margin-top:4px">Fetching price history for 50 stocks</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+  </div>
+
+  <!-- EXPLAINER -->
+  <div class="explainer" id="explainer">
+    <div class="explainer-header">How it works — indicators explained</div>
+
+    <div class="explainer-grid">
+      <div class="explainer-card">
+        <div class="explainer-card-title">Exponential Moving Average (EMA) <span class="explainer-tag">Core concept</span></div>
+        <p>An EMA is the <strong>average price of a stock over a set number of days</strong>, but it gives more weight to recent prices. This makes it react faster to new price moves than a simple average. Formula: each day's EMA = (today's price × smoothing factor) + (yesterday's EMA × (1 − smoothing factor)), where the smoothing factor = 2 ÷ (period + 1). The result is a smooth line on a chart that follows the stock's trend direction.</p>
+      </div>
+      <div class="explainer-card">
+        <div class="explainer-card-title">20 EMA <span class="explainer-tag">Short-term</span></div>
+        <p>Looks back over the last <strong>20 trading days (roughly 1 month)</strong>. Traders watch this as the short-term trend line. When price bounces off the 20 EMA, it often signals the trend is still healthy. When it breaks through, it can signal a short-term shift in momentum. This dashboard flags when price is within 1% of this level.</p>
+      </div>
+      <div class="explainer-card">
+        <div class="explainer-card-title">50 EMA <span class="explainer-tag">Medium-term</span></div>
+        <p>Looks back over the last <strong>50 trading days (roughly 2.5 months)</strong>. This is one of the most widely-watched levels by professional traders. A stock holding above its 50 EMA is generally considered to be in a healthy medium-term uptrend. A break below it is often seen as a warning sign. Many institutional investors use this level as a key decision point.</p>
+      </div>
+      <div class="explainer-card">
+        <div class="explainer-card-title">200 EMA <span class="explainer-tag">Long-term</span></div>
+        <p>Looks back over the last <strong>200 trading days (roughly 10 months)</strong>. This is the most important trend line in technical analysis. Price above the 200 EMA = long-term uptrend (bullish). Price below it = long-term downtrend (bearish). Major fund managers and analysts track this religiously. A stock falling below its 200 EMA often triggers large institutional sell orders.</p>
+      </div>
+      <div class="explainer-card">
+        <div class="explainer-card-title">RSI — Relative Strength Index <span class="explainer-tag">Momentum</span></div>
+        <p>RSI measures <strong>how fast and how much a stock has moved</strong> over the last 14 days, on a scale of 0 to 100. Above 70 = overbought (the stock may have risen too fast and a pullback is possible). Below 30 = oversold (the stock may have fallen too hard and a bounce is possible). RSI doesn't tell you what will happen — it tells you the stock is at an extreme, and extremes tend to revert.</p>
+      </div>
+      <div class="explainer-card">
+        <div class="explainer-card-title">Golden Cross &amp; Death Cross <span class="explainer-tag">Crossover signals</span></div>
+        <p>These are events where two EMAs cross each other. A <strong>golden cross</strong> is when the 20 EMA crosses above the 50 EMA — a bullish signal that short-term momentum is turning positive. A <strong>death cross</strong> is the opposite: the 20 EMA crosses below the 50 EMA, a bearish signal. These are considered strong signals because they require a sustained shift in price momentum to occur.</p>
+      </div>
+      <div class="explainer-card">
+        <div class="explainer-card-title">Bullish <span class="explainer-tag">Trend direction</span></div>
+        <p>A stock is labelled <strong>bullish</strong> when its current price is trading above its 200 EMA. This means the long-term trend is upward — the stock has on average been rising over the past 10 months. Bullish does not mean the stock will definitely go up. It means the underlying trend currently favours buyers over sellers. Most S&P 500 stocks are bullish in a healthy market.</p>
+      </div>
+      <div class="explainer-card">
+        <div class="explainer-card-title">Bearish <span class="explainer-tag">Trend direction</span></div>
+        <p>A stock is labelled <strong>bearish</strong> when its current price is trading below its 200 EMA. This means the long-term trend is downward. It does not mean the stock is guaranteed to fall further — it may be in the early stages of recovery — but it signals that sellers have had more control than buyers over the past 10 months. Worth watching more carefully in a portfolio context.</p>
+      </div>
+    </div>
+
+    <div class="explainer-card" id="data">
+      <div class="explainer-card-title">Flagging logic — how alerts are triggered</div>
+      <p>A stock is flagged (shown in red) when <strong>any</strong> of these conditions are met: its current price is within 1% above or below its 20 EMA, 50 EMA, or 200 EMA; its RSI is above 70 (overbought) or below 30 (oversold); or a golden or death cross occurred on the most recent trading day. The 1% proximity threshold is standard in technical trading — it catches stocks approaching a key level before they actually hit it, giving a heads-up rather than a lagging signal.</p>
+    </div>
+
+    <div class="data-source" style="margin-top:1.5rem">
+      <div class="data-source-icon">📊</div>
+      <div class="data-source-body">
+        <div class="data-source-title">Data source — Alpha Vantage (free API)</div>
+        <div class="data-source-desc">
+          All price data is fetched live from Alpha Vantage's free API. Each stock loads its full available daily price history. The EMA and RSI values are calculated in the browser — no third-party indicator service is used. Results are cached in your browser for 23 hours so the 25 requests/day free tier limit is respected. Data refreshes automatically the next day.<br><br>
+          To view the raw data for any stock directly, click below (replace <code style="font-family:var(--mono); font-size:11px; background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:3px">AAPL</code> with any ticker):
+        </div>
+        <a class="data-source-link" href="https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=AAPL&outputsize=compact&apikey=4OF517UCQNSWT0N2" target="_blank" rel="noopener">
+          → View raw AAPL data on Alpha Vantage
+        </a>
+        <div style="margin-top:8px; font-size:11px; color:var(--muted)">
+          Returns JSON with daily open, high, low, close, volume. The <code style="font-family:var(--mono); background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:3px">4. close</code> field is what this dashboard uses to calculate all indicators.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Built with Alpha Vantage free API · Data is delayed and for educational purposes only · Not financial advice
+</footer>
+
+<div style="max-width:1200px; margin:0 auto 2rem; padding:0 2rem;">
+  <div style="background:#13171f; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:1.25rem 1.5rem;">
+    <div style="font-size:11px; font-family:'JetBrains Mono',monospace; color:#4f8ef7; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.75rem;">Debug — fetch log</div>
+    <div id="debugLog" style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#6b7585; line-height:1.8; max-height:240px; overflow-y:auto;">Waiting to start...</div>
+  </div>
+</div>
+
+<script>
+const TOP50 = [
+  'AAPL','MSFT','NVDA','AMZN','GOOGL','META','BRK-B','LLY','TSLA','JPM',
+  'V','UNH','XOM','MA','JNJ','PG','HD','COST','MRK','ABBV',
+  'CVX','KO','PEP','ADBE','WMT','BAC','CRM','MCD','CSCO','TMO',
+  'ACN','ABT','ORCL','NFLX','NKE','DHR','TXN','AMD','INTC','QCOM',
+  'PM','UPS','LIN','NEE','BMY','AMGN','RTX','SBUX','INTU','LOW'
+];
+
+let allData = [];
+let currentFilter = 'all';
+let sortCol = null;
+let sortAsc = true;
+let loaded = 0;
+
+function calcEMA(prices, period) {
+  if (!prices || prices.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < prices.length; i++) {
+    ema = prices[i] * k + ema * (1 - k);
+  }
+  return ema;
+}
+
+function calcEMASeries(prices, period) {
+  if (!prices || prices.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  const series = new Array(period - 1).fill(null);
+  series.push(ema);
+  for (let i = period; i < prices.length; i++) {
+    ema = prices[i] * k + ema * (1 - k);
+    series.push(ema);
+  }
+  return series;
+}
+
+function calcRSI(prices, period) {
+  period = period || 14;
+  if (!prices || prices.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  const start = prices.length - period;
+  for (let i = start; i < prices.length; i++) {
+    const diff = prices[i] - prices[i - 1];
+    if (diff > 0) gains += diff; else losses += Math.abs(diff);
+  }
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+function isNear(price, ema, threshold) {
+  threshold = threshold || 0.01;
+  if (!ema || !price) return false;
+  return Math.abs(price - ema) / ema < threshold;
+}
+
+function detectCross(closes, period1, period2) {
+  if (!closes || closes.length < Math.max(period1, period2) + 2) return null;
+  const prev = closes.slice(0, -1);
+  const ema1curr = calcEMA(closes, period1);
+  const ema2curr = calcEMA(closes, period2);
+  const ema1prev = calcEMA(prev, period1);
+  const ema2prev = calcEMA(prev, period2);
+  if (!ema1curr || !ema2curr || !ema1prev || !ema2prev) return null;
+  if (ema1prev < ema2prev && ema1curr > ema2curr) return 'golden';
+  if (ema1prev > ema2prev && ema1curr < ema2curr) return 'death';
+  return null;
+}
+
+const AV_KEY = '4OF517UCQNSWT0N2';
+
+function debugLog(msg, color) {
+  const el = document.getElementById('debugLog');
+  if (!el) return;
+  const line = document.createElement('div');
+  line.style.color = color || '#6b7585';
+  line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function fetchStock(symbol) {
+  try {
+    debugLog('Fetching ' + symbol + '...', '#6b7585');
+    const url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' + symbol + '&outputsize=full&apikey=' + AV_KEY;
+    const res = await fetch(url);
+    if (!res.ok) { debugLog(symbol + ' — HTTP error: ' + res.status, '#f05c5c'); return null; }
+    const json = await res.json();
+    if (json['Note']) { debugLog('Rate limit hit: ' + json['Note'], '#f5a623'); return null; }
+    if (json['Information']) { debugLog('API info: ' + json['Information'], '#f5a623'); return null; }
+    const ts = json['Time Series (Daily)'];
+    if (!ts) { debugLog(symbol + ' — no time series in response. Keys: ' + Object.keys(json).join(', '), '#f05c5c'); return null; }
+    const dates = Object.keys(ts).sort();
+    if (dates.length < 20) { debugLog(symbol + ' — not enough data: ' + dates.length + ' days', '#f05c5c'); return null; }
+    const closes = dates.map(function(d) { return parseFloat(ts[d]['4. close']); });
+    debugLog(symbol + ' — OK (' + closes.length + ' days, price $' + closes[closes.length-1].toFixed(2) + ')', '#34c47a');
+    const price = closes[closes.length - 1];
+    const prevClose = closes[closes.length - 2];
+    const change = ((price - prevClose) / prevClose * 100);
+    const ema20 = calcEMA(closes, 20);
+    const ema50 = calcEMA(closes, 50);
+    const ema200 = calcEMA(closes, 200);
+    const rsi = calcRSI(closes, 14);
+    const cross = detectCross(closes, 20, 50);
+    const flags = [];
+    if (isNear(price, ema20, 0.01)) flags.push({ label: 'Near 20 EMA', type: 'red' });
+    if (isNear(price, ema50, 0.01)) flags.push({ label: 'Near 50 EMA', type: 'red' });
+    if (isNear(price, ema200, 0.01)) flags.push({ label: 'Near 200 EMA', type: 'red' });
+    if (rsi && rsi > 70) flags.push({ label: 'RSI overbought', type: 'amber' });
+    if (rsi && rsi < 30) flags.push({ label: 'RSI oversold', type: 'green' });
+    if (cross === 'golden') flags.push({ label: 'Golden cross', type: 'green' });
+    if (cross === 'death') flags.push({ label: 'Death cross', type: 'red' });
+    const bullish = ema200 ? price > ema200 : null;
+    return { symbol, price, change, ema20, ema50, ema200, rsi, flags, bullish, closes };
+  } catch(e) {
+    debugLog(symbol + ' — exception: ' + e.message, '#f05c5c');
+    return null;
+  }
+}
+
+function fmt(n) { return n != null ? '$' + n.toFixed(2) : '—'; }
+function fmtRsi(n) { return n != null ? n.toFixed(1) : '—'; }
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderTable();
+}
+
+function setSort(col) {
+  if (sortCol === col) {
+    sortAsc = !sortAsc;
+  } else {
+    sortCol = col;
+    sortAsc = true;
+  }
+  renderTable();
+}
+
+function renderTable() {
+  const search = (document.getElementById('searchBox') ? document.getElementById('searchBox').value.toUpperCase() : '');
+  let data = allData.filter(function(d) { return d && d.symbol.includes(search); });
+  if (currentFilter === 'flagged') data = data.filter(function(d) { return d.flags.length > 0; });
+  if (currentFilter === 'bull') data = data.filter(function(d) { return d.bullish === true; });
+  if (currentFilter === 'bear') data = data.filter(function(d) { return d.bullish === false; });
+
+  if (sortCol) {
+    data = data.slice().sort(function(a, b) {
+      let av, bv;
+      if (sortCol === 'symbol') { av = a.symbol; bv = b.symbol; }
+      else if (sortCol === 'price') { av = a.price; bv = b.price; }
+      else if (sortCol === 'change') { av = a.change; bv = b.change; }
+      else if (sortCol === 'rsi') { av = a.rsi || 0; bv = b.rsi || 0; }
+      else if (sortCol === 'flags') { av = a.flags.length; bv = b.flags.length; }
+      if (typeof av === 'string') return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortAsc ? av - bv : bv - av;
+    });
+  }
+
+  const container = document.getElementById('tableContainer');
+  if (!data.length) {
+    container.innerHTML = '<div class="loading-state"><div class="load-title">No stocks match this filter.</div></div>';
+    return;
+  }
+
+  function thClass(col) {
+    return sortCol === col ? 'sorted' : '';
+  }
+  function arrow(col) {
+    if (sortCol !== col) return '';
+    return sortAsc ? ' ↑' : ' ↓';
+  }
+
+  let html = '<table><thead><tr>';
+  html += '<th class="' + thClass('symbol') + '" onclick="setSort(\'symbol\')">Ticker' + arrow('symbol') + '</th>';
+  html += '<th class="' + thClass('price') + '" onclick="setSort(\'price\')">Price' + arrow('price') + '</th>';
+  html += '<th class="' + thClass('change') + '" onclick="setSort(\'change\')">Change' + arrow('change') + '</th>';
+  html += '<th>20 EMA</th>';
+  html += '<th>50 EMA</th>';
+  html += '<th>200 EMA</th>';
+  html += '<th class="' + thClass('rsi') + '" onclick="setSort(\'rsi\')">RSI (14)' + arrow('rsi') + '</th>';
+  html += '<th>Trend</th>';
+  html += '<th class="' + thClass('flags') + '" onclick="setSort(\'flags\')">Alerts' + arrow('flags') + '</th>';
+  html += '</tr></thead><tbody>';
+
+  data.forEach(function(d) {
+    const flagged = d.flags.length > 0;
+    const changeClass = d.change >= 0 ? 'change-pos' : 'change-neg';
+    const changeSign = d.change >= 0 ? '+' : '';
+    let trendHTML;
+    if (d.bullish === true) trendHTML = '<span class="trend-bull">Bullish</span>';
+    else if (d.bullish === false) trendHTML = '<span class="trend-bear">Bearish</span>';
+    else trendHTML = '<span class="trend-na">—</span>';
+
+    const ema20Class = isNear(d.price, d.ema20, 0.01) ? 'ema-cell hit' : 'ema-cell';
+    const ema50Class = isNear(d.price, d.ema50, 0.01) ? 'ema-cell hit' : 'ema-cell';
+    const ema200Class = isNear(d.price, d.ema200, 0.01) ? 'ema-cell hit' : 'ema-cell';
+
+    let rsiClass = 'rsi-cell rsi-neutral';
+    if (d.rsi > 70) rsiClass = 'rsi-cell rsi-ob';
+    else if (d.rsi < 30) rsiClass = 'rsi-cell rsi-os';
+
+    const badgesHTML = d.flags.length > 0
+      ? d.flags.map(function(f) {
+          return '<span class="badge badge-' + f.type + '">' + f.label + '</span>';
+        }).join('')
+      : '<span class="no-alerts">—</span>';
+
+    const flagDot = flagged ? '<span class="flag-dot"></span>' : '';
+
+    html += '<tr class="' + (flagged ? 'flagged-row' : '') + '">';
+    html += '<td><div class="ticker-cell">' + flagDot + d.symbol + '</div></td>';
+    html += '<td class="price-cell">' + fmt(d.price) + '</td>';
+    html += '<td class="' + changeClass + '">' + changeSign + d.change.toFixed(2) + '%</td>';
+    html += '<td class="' + ema20Class + '">' + fmt(d.ema20) + '</td>';
+    html += '<td class="' + ema50Class + '">' + fmt(d.ema50) + '</td>';
+    html += '<td class="' + ema200Class + '">' + fmt(d.ema200) + '</td>';
+    html += '<td class="' + rsiClass + '">' + fmtRsi(d.rsi) + '</td>';
+    html += '<td>' + trendHTML + '</td>';
+    html += '<td>' + badgesHTML + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function updateSummary() {
+  const d = allData.filter(Boolean);
+  document.getElementById('totalCount').textContent = d.length;
+  document.getElementById('alertCount').textContent = d.filter(function(s) { return s.flags.length > 0; }).length;
+  document.getElementById('bullCount').textContent = d.filter(function(s) { return s.bullish === true; }).length;
+  document.getElementById('bearCount').textContent = d.filter(function(s) { return s.bullish === false; }).length;
+  document.getElementById('obCount').textContent = d.filter(function(s) { return s.rsi > 70; }).length;
+  document.getElementById('osCount').textContent = d.filter(function(s) { return s.rsi < 30; }).length;
+  const tag = document.getElementById('updatedTag');
+  if (tag) tag.textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+const CACHE_KEY = 'sp500_dashboard_cache';
+const CACHE_TTL = 23 * 60 * 60 * 1000;
+
+function loadCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const now = Date.now();
+    const valid = {};
+    Object.keys(parsed).forEach(function(k) {
+      if (now - parsed[k].ts < CACHE_TTL) valid[k] = parsed[k].data;
+    });
+    return valid;
+  } catch(e) { return {}; }
+}
+
+function saveCache(symbol, data) {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    const store = raw ? JSON.parse(raw) : {};
+    store[symbol] = { ts: Date.now(), data: data };
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(store));
+  } catch(e) {}
+}
+
+async function loadAll() {
+  debugLog('Dashboard started. Checking cache...', '#4f8ef7');
+  const cache = loadCache();
+  const toFetch = [];
+  TOP50.forEach(function(sym) {
+    if (cache[sym]) {
+      allData.push(cache[sym]);
+      debugLog(sym + ' — loaded from cache', '#4f8ef7');
+    } else {
+      toFetch.push(sym);
+    }
+  });
+  updateSummary();
+  renderTable();
+
+  const MAX_REQUESTS = 25;
+  const canFetch = toFetch.slice(0, MAX_REQUESTS);
+  debugLog(toFetch.length + ' stocks need fetching. Will fetch ' + canFetch.length + ' (daily limit).', '#4f8ef7');
+
+  if (canFetch.length === 0) {
+    const tag = document.getElementById('updatedTag');
+    if (tag) tag.textContent = 'Loaded from cache · ' + new Date().toLocaleTimeString();
+    return;
+  }
+
+  const total = canFetch.length;
+  let done = 0;
+
+  for (let i = 0; i < canFetch.length; i++) {
+    const result = await fetchStock(canFetch[i]);
+    if (result) {
+      allData.push(result);
+      saveCache(canFetch[i], result);
+    }
+    done++;
+    const pct = Math.min(100, Math.round(done / total * 100));
+    const bar = document.getElementById('progressBar');
+    if (bar) bar.style.width = pct + '%';
+    updateSummary();
+    renderTable();
+    if (i < canFetch.length - 1) {
+      await new Promise(function(r) { setTimeout(r, 500); });
+    }
+  }
+
+  if (toFetch.length > MAX_REQUESTS) {
+    const tag = document.getElementById('updatedTag');
+    if (tag) tag.textContent = 'Loaded ' + MAX_REQUESTS + '/' + TOP50.length + ' stocks (free tier limit) · ' + new Date().toLocaleTimeString();
+  }
+}
+
+loadAll();
+</script>
+</body>
+</html>
